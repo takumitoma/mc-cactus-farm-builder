@@ -5,8 +5,8 @@ const GoalBlock = goals.GoalBlock;
 var mcData;
 
 class CactusBot {
-    constructor(botID) {
-        let username = config.settings.username + botID.toString();
+    constructor(botId) {
+        let username = config.settings.username + botId.toString();
         this.bot = mineflayer.createBot({
             host: "localhost",
             port: config.settings.portNumber,
@@ -32,34 +32,16 @@ class CactusBot {
             console.log(err);
         });
 
-        this.bot.once("spawn", async () => {
-            await this.onSpawn();
-        });
-
-        // --- bot command listener
-        this.bot.on("chat", async (username, message) => {
-            if ((username == this.bot.username) || !message.startsWith("cactus")) return;
-
-            let tokens = message.split(" ").slice(1);
-
-            switch(tokens[0]) {
-                case "goto":
-                    this.onGoto(tokens);
-                case "build":
-            }
-        });
+        this.bot.once("spawn", async () => await this.onSpawn());
     }
 
-    onSpawn() {
+    async onSpawn() {
+        console.log(`${this.bot.username} spawned`);
         mcData = require('minecraft-data')(this.bot.version);
         this.bot.loadPlugin(pathfinder);
         let movements = new Movements(this.bot, mcData);
         this.bot.pathfinder.setMovements(movements);
         movements.canDig = false;
-    }
-    
-    async onGoto(tokens) {
-        return;
     }
 
     async gotoGoalBlock(x, y, z) {
@@ -70,6 +52,7 @@ class CactusBot {
             console.log(e);
         }
     }
+
 }
 
 module.exports = CactusBot;
