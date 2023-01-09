@@ -8,6 +8,7 @@ const BOTS_COUNT = parseInt(config.settings.numberOfBots);
 const NUM_OF_TICKS_BOT_SPAWN = 60; 
 const NUM_OF_TICKS_JUMP = 12;
 const TOP_FACE = vec3(0, 1, 0);
+const TOOL_NAME = config.settings.tool;
 const FOUNDATION_BLOCK_NAME = config.settings.foundationBlock;
 const CACTUS_BREAK_BLOCK_NAME = config.settings.cactusBreakBlock;
 const NUM_OF_BLOCKS_PER_LAYER = {
@@ -15,22 +16,20 @@ const NUM_OF_BLOCKS_PER_LAYER = {
     sand: 4,
     foundation: 13,
     cactusBreak: 2
-}
+};
 
 class PrimaryCactusBot extends CactusBot {
     constructor(botId) {
         super(botId);
         this.initCommandListener();
-        this.secondaryBots = []
+        this.secondaryBots = [];
         this.blockIds = {
             cactus: -1,
             sand: -1,
             foundation: -1,
             cactusBreak: -1
-        }
+        };
         this.toolId = -1;
-        this.startElevation = -1;
-        this.buildToY = -1;
     }
 
     async initCommandListener() {
@@ -53,12 +52,12 @@ class PrimaryCactusBot extends CactusBot {
     loadBlockIds() {
         this.blockIds.cactus = this.getBlockID("cactus");
         this.blockIds.sand = this.getBlockID("sand");
-        this.blockIds.foundation = this.getBlockID(config.settings.foundationBlock);
-        this.blockIds.cactusBreak = this.getBlockID(config.settings.cactusBreakBlock);
+        this.blockIds.foundation = this.getBlockID(FOUNDATION_BLOCK_NAME);
+        this.blockIds.cactusBreak = this.getBlockID(CACTUS_BREAK_BLOCK_NAME);
     }
 
     loadToolId() {
-        let toolName = config.settings.tool;
+        let toolName = TOOL_NAME;
         if (toolName != "") this.toolId = mcData.itemsByName[toolName].id;
     }
 
@@ -111,8 +110,37 @@ class PrimaryCactusBot extends CactusBot {
         }
     }
 
-    computeNumOfLayersToBuild(maxEndElevation) {
-        return Math.floor((maxEndElevation - this.startElevation - 1) / 4);
+    hasEnoughMaterialsToBuild(startElevation, endElevation, botItems) {
+        let numOfLayersToBuild = this.computeNumOfLayersToBuild(startElevation, endElevation);
+        let numOfBlocksNeeded = this.computeNumOfBlocksNeeded(numOfLayersToBuild);
+        let numOfBlocksInInventory = this.computeNumOfBlocksInInventory(botItems);
+        let numOfBlocksMissing = {
+            cactus: 0,
+            sand: 0,
+            foundation: 0,
+            cactusBreak: 0
+        };
+        let hasEnoughMaterials = true;
+        for (let block in numOfBlocksNeeded) {
+            if (numOfBlocksInInventory[block] < numOfBlocksNeeded[block]) {
+                numOfBlocksMissing[block] = 
+                    numOfBlocksNeeded[block] - numOfBlocksInInventory[block];
+                hasEnoughMaterials = false;
+            }
+        }
+        if (!hasEnoughMaterials) {
+            let errMsg = "";
+            for (let block in numOfBlocksMissing) {
+                errMsg += `${block}: ${numOfBlocksMissing[block]} `;
+            }
+            this.bot.chat(`Failed to build, I am missing ${errMsg}`);
+            console.log(`${this.bot.username} failed to build. Missing ${errMsg}`);
+        }
+        return hasEnoughMaterials;
+    }
+
+    computeNumOfLayersToBuild(startElevation, endElevation) {
+        return Math.floor((endElevation - startElevation - 1) / 4);
     }
 
     computeNumOfBlocksNeeded(numOfLayersToBuild) {
@@ -129,33 +157,34 @@ class PrimaryCactusBot extends CactusBot {
             }
             numOfBlocks[block] = blocksNeeded;
         }
+        console.log(`${this.bot.username} numOfBlocksNeeded`, numOfBlocks);
         return numOfBlocks;
     }
 
-    async computeNumOfBlocksInInventory() {
+    computeNumOfBlocksInInventory(botItems) {
         let numOfBlocks = {
             cactus: 0,
             sand: 0,
             foundation: 0,
             cactusBreak: 0
         };
-        let botItems = this.bot.inventory.items();
-        for (let item in botItems) {
+        for (let item of botItems) {
             switch (item.name) {
                 case "cactus":
-                    numOfBlocks[cactus] += item.count;
+                    numOfBlocks["cactus"] += item.count;
                     break;
                 case "sand":
-                    numOfBlocks[sand] += item.count;
+                    numOfBlocks["sand"] += item.count;
                     break;
                 case FOUNDATION_BLOCK_NAME:
-                    numOfBlocks[foundation] += item.count;
+                    numOfBlocks["foundation"] += item.count;
                     break;
                 case CACTUS_BREAK_BLOCK_NAME:
-                    numOfBlocks[cactusBreak] += item.count;
+                    numOfBlocks["cactusBreak"] += item.count;
                     break;
             }
         }
+        console.log(`${this.bot.username} numOfBlocksInInventory`, numOfBlocks);
         return numOfBlocks;
     }
 
@@ -166,13 +195,17 @@ class PrimaryCactusBot extends CactusBot {
 
     async onBuild(tokens) {
         if (!this.buildIsValid(tokens)) return;
-        this.startElevation = this.bot.entity.position.y;
-        console.log(this.startElevation);
-        let numOfLayersToBuild = this.computeNumOfLayersToBuild(tokens[1]);
-        let numOfBlocksNeeded = this.computeNumOfBlocksNeeded(numOfLayersToBuild);
-        let numOfBlocksInInventory = this.computeNumOfBlocksInInventory();
+        let startElevation = this.bot.entity.position.y;
+        let endElevation = tokens[1];
+        let botItems = this.bot.inventory.items();
+        if (!this.hasEnoughMaterialsToBuild(startElevation, endElevation, botItems)) return;
+        let numOfLayersToBuild = this.computeNumOfLayersToBuild(startElevation, endElevation);
+        await this.build(numOfLayersToBuild);
+    }
+
+    async build(numOfLayersToBuild) {
         await this.buildFoundationLayer();
-        for (var i = 0; i < 1; ++i) {
+        for (var i = 0; i < numOfLayersToBuild; ++i) {
             await this.buildFoundationLayer();
             await this.digFoundationLayer();
             await this.buildSandLayer();
@@ -184,24 +217,29 @@ class PrimaryCactusBot extends CactusBot {
 
     async buildUp() {
         await this.bot.equip(this.blockIds.foundation, "hand");
-        await this.bot.lookAt(this.bot.entity.position.offset(0, -1, 0));
-        let numOfTicksToPlace = 0;
-        this.bot.setControlState("jump", true);
-        while (true) {
-            var belowPosition = this.bot.entity.position.offset(0, -0.5, 0);
-            let belowBlock = this.bot.blockAt(belowPosition);
-            if (belowBlock.name == "air") {
+        let sourceBlockPosition = this.bot.entity.position.offset(0, -1, 0);
+        let sourceBlock = this.bot.blockAt(sourceBlockPosition);
+        let goalElevation = Math.floor(this.bot.entity.position.y) + 1;
+        await this.bot.lookAt(sourceBlockPosition);
+        let tryCount = 0
+        while (tryCount < 10) {
+            try {
+                this.bot.setControlState("jump", true);
+                this.bot.setControlState("jump", false);
+                while (true) {
+                    if (this.bot.entity.position.y > goalElevation) {
+                        break;
+                    }
+                    await this.bot.waitForTicks(1);
+                }
+                await this.bot.placeBlock(sourceBlock, TOP_FACE);
                 break;
+            } catch(e) {
+                await this.bot.waitForTicks(NUM_OF_TICKS_JUMP);
+                tryCount += 1;
+                if (tryCount == 10) console.log(e);
             }
-            await this.bot.waitForTicks(1);
-            numOfTicksToPlace += 1;
         }
-        let sourcePosition = belowPosition.offset(0, -1, 0);
-        let sourceBlock = this.bot.blockAt(sourcePosition);
-        console.log(sourceBlock);
-        await this.bot.placeBlock(sourceBlock, TOP_FACE);
-        this.bot.setControlState("jump", false);
-        await this.bot.waitForTicks(NUM_OF_TICKS_JUMP - numOfTicksToPlace);
     }
 
     async buildCorners(blockID) {

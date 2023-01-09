@@ -45,12 +45,8 @@ class CactusBot {
     }
 
     async gotoGoalBlock(x, y, z) {
-        try {
-            let goal = new GoalBlock(x, y, z);
-            await this.bot.pathfinder.goto(goal, true);
-        } catch(e) {
-            console.log(e);
-        }
+        let goal = new GoalBlock(x, y, z);
+        await this.bot.pathfinder.goto(goal, true);
     }
 
 }
