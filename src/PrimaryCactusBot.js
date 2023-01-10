@@ -1,5 +1,6 @@
 const CactusBot = require("./CactusBot");
 const SecondaryCactusBot = require("./SecondaryCactusBot");
+const CactusCalculations = require("./Calculations");
 var mcData; // loaded after bot spawns in minecraft server
 const vec3 = require("vec3");
 const config = require("../config.json");
@@ -11,12 +12,6 @@ const TOP_FACE = vec3(0, 1, 0);
 const TOOL_NAME = config.settings.tool;
 const FOUNDATION_BLOCK_NAME = config.settings.foundationBlock;
 const CACTUS_BREAK_BLOCK_NAME = config.settings.cactusBreakBlock;
-const NUM_OF_BLOCKS_PER_LAYER = {
-    cactus: 4,
-    sand: 4,
-    foundation: 13,
-    cactusBreak: 2
-};
 
 class PrimaryCactusBot extends CactusBot {
     constructor(botId) {
@@ -111,81 +106,23 @@ class PrimaryCactusBot extends CactusBot {
     }
 
     hasEnoughMaterialsToBuild(startElevation, endElevation, botItems) {
-        let numOfLayersToBuild = this.computeNumOfLayersToBuild(startElevation, endElevation);
-        let numOfBlocksNeeded = this.computeNumOfBlocksNeeded(numOfLayersToBuild);
-        let numOfBlocksInInventory = this.computeNumOfBlocksInInventory(botItems);
-        let numOfBlocksMissing = {
-            cactus: 0,
-            sand: 0,
-            foundation: 0,
-            cactusBreak: 0
-        };
-        let hasEnoughMaterials = true;
-        for (let block in numOfBlocksNeeded) {
-            if (numOfBlocksInInventory[block] < numOfBlocksNeeded[block]) {
-                numOfBlocksMissing[block] = 
-                    numOfBlocksNeeded[block] - numOfBlocksInInventory[block];
-                hasEnoughMaterials = false;
-            }
+        let numOfLayersToBuild = 
+            CactusCalculations.computeNumOfLayersToBuild(startElevation, endElevation);
+        let numOfBlocksNeeded = CactusCalculations.computeNumOfBlocksNeeded(numOfLayersToBuild);
+        console.log(`${this.bot.username} numOfBlocksNeeded`, numOfBlocksNeeded);
+        let numOfBlocksInInventory = CactusCalculations.computeNumOfBlocksInInventory
+            (botItems, FOUNDATION_BLOCK_NAME, CACTUS_BREAK_BLOCK_NAME);
+        console.log(`${this.bot.username} numOfBlocksInInventory`, numOfBlocksInInventory);
+        let numOfBlocksMissing = 
+            CactusCalculations.computeNumOfBlocksMissing(numOfBlocksNeeded, numOfBlocksInInventory);
+        if (!numOfBlocksMissing) return true;
+        let errMsg = ""
+        for (let block in numOfBlocksMissing) {
+            errMsg += `${block}: ${numOfBlocksMissing[block]} `;
         }
-        if (!hasEnoughMaterials) {
-            let errMsg = "";
-            for (let block in numOfBlocksMissing) {
-                errMsg += `${block}: ${numOfBlocksMissing[block]} `;
-            }
-            this.bot.chat(`Failed to build, I am missing ${errMsg}`);
-            console.log(`${this.bot.username} failed to build. Missing ${errMsg}`);
-        }
-        return hasEnoughMaterials;
-    }
-
-    computeNumOfLayersToBuild(startElevation, endElevation) {
-        return Math.floor((endElevation - startElevation - 1) / 4);
-    }
-
-    computeNumOfBlocksNeeded(numOfLayersToBuild) {
-        let numOfBlocks = {
-            cactus: 0,
-            sand: 0,
-            foundation: 0,
-            cactusBreak: 0
-        };
-        for (let block in NUM_OF_BLOCKS_PER_LAYER) {
-            let blocksNeeded = numOfLayersToBuild * NUM_OF_BLOCKS_PER_LAYER[block];
-            if (block == "foundation") {
-                blocksNeeded += 5
-            }
-            numOfBlocks[block] = blocksNeeded;
-        }
-        console.log(`${this.bot.username} numOfBlocksNeeded`, numOfBlocks);
-        return numOfBlocks;
-    }
-
-    computeNumOfBlocksInInventory(botItems) {
-        let numOfBlocks = {
-            cactus: 0,
-            sand: 0,
-            foundation: 0,
-            cactusBreak: 0
-        };
-        for (let item of botItems) {
-            switch (item.name) {
-                case "cactus":
-                    numOfBlocks["cactus"] += item.count;
-                    break;
-                case "sand":
-                    numOfBlocks["sand"] += item.count;
-                    break;
-                case FOUNDATION_BLOCK_NAME:
-                    numOfBlocks["foundation"] += item.count;
-                    break;
-                case CACTUS_BREAK_BLOCK_NAME:
-                    numOfBlocks["cactusBreak"] += item.count;
-                    break;
-            }
-        }
-        console.log(`${this.bot.username} numOfBlocksInInventory`, numOfBlocks);
-        return numOfBlocks;
+        this.bot.chat(`Failed to build, I am missing ${errMsg}`);
+        console.log(`${this.bot.username} failed to build. Missing ${errMsg}`);
+        return false;
     }
 
     async onGoto(tokens) {
@@ -199,7 +136,8 @@ class PrimaryCactusBot extends CactusBot {
         let endElevation = tokens[1];
         let botItems = this.bot.inventory.items();
         if (!this.hasEnoughMaterialsToBuild(startElevation, endElevation, botItems)) return;
-        let numOfLayersToBuild = this.computeNumOfLayersToBuild(startElevation, endElevation);
+        let numOfLayersToBuild = 
+            CactusCalculations.computeNumOfLayersToBuild(startElevation, endElevation);
         await this.build(numOfLayersToBuild, startElevation);
     }
 
