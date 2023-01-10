@@ -5,7 +5,7 @@ const NUM_OF_BLOCKS_PER_LAYER = {
     cactusBreak: 2
 };
 
-const Calculations = {
+const CactusCalculations = {
     computeNumOfLayersToBuild: function (startElevation, endElevation) {
         return Math.floor((endElevation - startElevation - 1) / 4);
     },
@@ -69,8 +69,8 @@ const Calculations = {
                 hasEnoughMaterials = false;
             }
         }
-        return (hasEnoughMaterials) ? null : numOfBlocksInInventory;
+        return (hasEnoughMaterials) ? null : numOfBlocksMissing;
     }
 }
 
-module.exports = Calculations;
+module.exports = CactusCalculations;

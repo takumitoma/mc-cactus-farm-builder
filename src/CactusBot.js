@@ -1,10 +1,12 @@
-const CactusCalculations = require("./Calculations");
+const CactusCalculations = require("./CactusCalculations");
 const mineflayer = require("mineflayer");
 const config = require("../config.json");
 const { pathfinder, Movements, goals } = require('mineflayer-pathfinder');
 const GoalBlock = goals.GoalBlock;
 let mcData;
 const vec3 = require("vec3");
+const FOUNDATION_BLOCK_NAME = config.settings.foundationBlock;
+const CACTUS_BREAK_BLOCK_NAME = config.settings.cactusBreakBlock;
 
 const NUM_OF_TICKS_JUMP = 12;
 const TOP_FACE = vec3(0, 1, 0);
@@ -49,12 +51,14 @@ class CactusBot {
 
     async onSpawn() {
         console.log(`${this.bot.username} spawned`);
-        mcData = require('minecraft-data')(this.bot.version);
+    }
+
+    loadPathFinder(mcData) {
         this.bot.loadPlugin(pathfinder);
         let movements = new Movements(this.bot, mcData);
         this.bot.pathfinder.setMovements(movements);
         movements.canDig = false;
-    }
+    }   
 
     async gotoGoalBlock(x, y, z) {
         let goal = new GoalBlock(x, y, z);
@@ -62,7 +66,7 @@ class CactusBot {
     }
 
     async build(numOfLayersToBuild, startElevation) {
-        console.log(`${this.bot.username} building ${numOfLayersToBuild} layers`,
+        console.log(`${this.bot.username} building ${numOfLayersToBuild} layer(s)`,
             `starting at ${startElevation}`);
         await this.buildFoundationLayer();
         for (var i = 0; i < numOfLayersToBuild; ++i) {
@@ -162,6 +166,23 @@ class CactusBot {
         await this.bot.dig(this.bot.blockAt(botPosition.offset(1, -0.5, 1)), false);
         await this.bot.dig(this.bot.blockAt(botPosition.offset(-1, -0.5, 1)), false);
         await this.bot.dig(this.bot.blockAt(botPosition.offset(-1, -0.5, -1)), false);
+    }
+
+    hasEnoughMaterials(numOfBlocksNeeded, botItems) {
+        let numOfBlocksInInventory = CactusCalculations.computeNumOfBlocksInInventory
+            (botItems, FOUNDATION_BLOCK_NAME, CACTUS_BREAK_BLOCK_NAME);
+        console.log(`${this.bot.username} numOfBlocksInInventory`, numOfBlocksInInventory);
+        let numOfBlocksMissing = 
+            CactusCalculations.computeNumOfBlocksMissing(numOfBlocksNeeded, numOfBlocksInInventory);
+        if (!numOfBlocksMissing) return true;
+        let errMsg = ""
+        for (let block in numOfBlocksMissing) {
+            errMsg += `${block}: ${numOfBlocksMissing[block]} `;
+        }
+        console.log(numOfBlocksMissing);
+        this.bot.chat(`Failed to build, I am missing ${errMsg}`);
+        console.log(`${this.bot.username} failed to build. Missing ${errMsg}`);
+        return false;
     }
 
 }
