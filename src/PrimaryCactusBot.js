@@ -1,30 +1,30 @@
 const CactusBot = require("./CactusBot");
 const SecondaryCactusBot = require("./SecondaryCactusBot");
 const CactusCalculations = require("./Calculations");
-var mcData; // loaded after bot spawns in minecraft server
-const vec3 = require("vec3");
+let mcData; // loaded after bot spawns in minecraft server
 const config = require("../config.json");
 
 const BOTS_COUNT = parseInt(config.settings.numberOfBots);
-const NUM_OF_TICKS_BOT_SPAWN = 60; 
-const NUM_OF_TICKS_JUMP = 12;
-const TOP_FACE = vec3(0, 1, 0);
+const NUM_OF_TICKS_BOT_SPAWN = 20; 
 const TOOL_NAME = config.settings.tool;
 const FOUNDATION_BLOCK_NAME = config.settings.foundationBlock;
 const CACTUS_BREAK_BLOCK_NAME = config.settings.cactusBreakBlock;
+const offsets = [
+    [4, 0],
+    [4, 4],
+    [0, 4],
+    [-4, 4],
+    [-4, 0],
+    [-4, -4],
+    [0, -4],
+    [4, -4]
+]
 
 class PrimaryCactusBot extends CactusBot {
     constructor(botId) {
         super(botId);
-        this.initCommandListener();
         this.secondaryBots = [];
-        this.blockIds = {
-            cactus: -1,
-            sand: -1,
-            foundation: -1,
-            cactusBreak: -1
-        };
-        this.toolId = -1;
+        this.initCommandListener();
     }
 
     async initCommandListener() {
@@ -58,14 +58,18 @@ class PrimaryCactusBot extends CactusBot {
 
     async onSpawn() {
         super.onSpawn();
-        mcData = require("minecraft-data")(this.bot.version);
+        mcData = require('minecraft-data')(this.bot.version);
         this.loadBlockIds();
         this.loadToolId();
+        console.log(this.blockIds);
         for (var i = 2;  i <= BOTS_COUNT; ++i) {
             let newBot = new SecondaryCactusBot(i);
+            Object.assign(newBot.blockIds, this.blockIds);
+            Object.assign(newBot.toolId, this.toolId);
             this.secondaryBots.push(newBot);
             await this.bot.waitForTicks(NUM_OF_TICKS_BOT_SPAWN);
         }
+        console.log(this.blockIds);
     }
 
     gotoIsValid(tokens) {
@@ -127,7 +131,21 @@ class PrimaryCactusBot extends CactusBot {
 
     async onGoto(tokens) {
         if (!this.gotoIsValid(tokens)) return;
-        await this.gotoGoalBlock(tokens[1], tokens[2], tokens[3]);
+        let x = parseFloat(tokens[1]);
+        let y = parseFloat(tokens[2]);
+        let z = parseFloat(tokens[3]);
+        let self = this;
+        let operations = [new Promise(async function() { await self.gotoGoalBlock(x, y, z) })];
+        let i = 0;
+        for (let cactusBot of this.secondaryBots) {
+            let newX = x + offsets[i][0];
+            let newZ = z + offsets[i][1];
+            operations.push(new Promise(async function() { 
+                await cactusBot.gotoGoalBlock(newX, y, newZ);
+            }));
+            ++i;
+        }
+        Promise.all(operations);
     }
 
     async onBuild(tokens) {
@@ -141,97 +159,6 @@ class PrimaryCactusBot extends CactusBot {
         await this.build(numOfLayersToBuild, startElevation);
     }
 
-    async build(numOfLayersToBuild, startElevation) {
-        console.log(`${this.bot.username} building ${numOfLayersToBuild} layers`,
-            `starting at ${startElevation}`);
-        await this.buildFoundationLayer();
-        for (var i = 0; i < numOfLayersToBuild; ++i) {
-            await this.buildFoundationLayer();
-            await this.digFoundationLayer();
-            await this.buildSandLayer();
-            await this.buildCactusLayer();
-            await this.buildCactusBreakLayer();
-        }
-        await this.digDown(startElevation);
-    }
-
-    async buildUp() {
-        await this.bot.equip(this.blockIds.foundation, "hand");
-        let sourceBlockPosition = this.bot.entity.position.offset(0, -1, 0);
-        let sourceBlock = this.bot.blockAt(sourceBlockPosition);
-        let goalElevation = Math.floor(this.bot.entity.position.y) + 1;
-        await this.bot.lookAt(sourceBlockPosition);
-        let tryCount = 0
-
-        while (tryCount < 10) {
-            try {
-                this.bot.setControlState("jump", true);
-                this.bot.setControlState("jump", false);
-                while (true) {
-                    if (this.bot.entity.position.y >= goalElevation) {
-                        await this.bot.placeBlock(sourceBlock, TOP_FACE);
-                        break;
-                    }
-                    await this.bot.waitForTicks(1);
-                }
-                break;
-            } catch(e) {
-                await this.bot.waitForTicks(NUM_OF_TICKS_JUMP);
-                tryCount += 1;
-                if (tryCount == 10) console.log(e);
-            }
-        }
-    }
-
-    async buildCorners(blockID) {
-        await this.bot.equip(blockID, "hand");
-        let botPosition = this.bot.entity.position;
-        await this.bot.placeBlock(this.bot.blockAt(botPosition.offset(1, -0.5, -1)), TOP_FACE);
-        await this.bot.placeBlock(this.bot.blockAt(botPosition.offset(1, -0.5, 1)), TOP_FACE);
-        await this.bot.placeBlock(this.bot.blockAt(botPosition.offset(-1, -0.5, 1)), TOP_FACE);
-        await this.bot.placeBlock(this.bot.blockAt(botPosition.offset(-1, -0.5, -1)), TOP_FACE);
-    }
-
-    async buildFoundationLayer() {
-        await this.buildCorners(this.blockIds.foundation);
-        await this.buildUp();
-    }
-
-    async buildSandLayer() {
-        await this.buildCorners(this.blockIds.sand);
-        await this.buildUp();
-    }
-
-    async buildCactusLayer() {
-        await this.buildCorners(this.blockIds.cactus);
-        await this.buildUp();
-    }
-
-    async digFoundationLayer() {
-        let botPosition = this.bot.entity.position;
-        if (this.toolId >= 0) this.bot.equip(this.toolId, "hand");
-        await this.bot.dig(this.bot.blockAt(botPosition.offset(1, -1.5, -1)), false);
-        await this.bot.dig(this.bot.blockAt(botPosition.offset(1, -1.5, 1)), false);
-        await this.bot.dig(this.bot.blockAt(botPosition.offset(-1, -1.5, 1)), false);
-        await this.bot.dig(this.bot.blockAt(botPosition.offset(-1, -1.5, -1)), false);
-    }
-
-    async buildCactusBreakLayer() {
-        await this.buildCorners(this.blockIds.foundation);
-        await this.bot.equip(this.blockIds.cactusBreak, "hand");
-        let botPosition = this.bot.entity.position;
-        await this.bot.placeBlock(this.bot.blockAt(botPosition.offset(1, 0, -1)), vec3(0, 0, 1));
-        await this.bot.placeBlock(this.bot.blockAt(botPosition.offset(-1, 0, 1)), vec3(0, 0, -1));
-        await this.buildUp();
-    }
-
-    async digDown(startElevation) {
-        if (this.toolId >= 0) this.bot.equip(this.toolId, "hand");
-        await this.bot.lookAt(this.bot.entity.position.offset(0, -1, 0));
-        while (Math.floor(this.bot.entity.position.y) > startElevation) {
-            await this.bot.dig(this.bot.blockAt(this.bot.entity.position.offset(0, -1, 0)), true);
-        }
-    }
 }
 
 class Singleton {
