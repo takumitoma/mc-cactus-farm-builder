@@ -1,13 +1,12 @@
 const CactusCalculations = require("./CactusCalculations");
-const mineflayer = require("mineflayer");
 const config = require("../config.json");
+const mineflayer = require("mineflayer");
 const { pathfinder, Movements, goals } = require('mineflayer-pathfinder');
 const GoalBlock = goals.GoalBlock;
-let mcData;
 const vec3 = require("vec3");
+
 const FOUNDATION_BLOCK_NAME = config.settings.foundationBlock;
 const CACTUS_BREAK_BLOCK_NAME = config.settings.cactusBreakBlock;
-
 const NUM_OF_TICKS_JUMP = 12;
 const TOP_FACE = vec3(0, 1, 0);
 
@@ -69,7 +68,7 @@ class CactusBot {
         console.log(`${this.bot.username} building ${numOfLayersToBuild} layer(s)`,
             `starting at ${startElevation}`);
         await this.buildFoundationLayer();
-        for (var i = 0; i < numOfLayersToBuild; ++i) {
+        for (let i = 0; i < numOfLayersToBuild; ++i) {
             await this.buildFoundationLayer();
             await this.digFoundationLayer();
             await this.buildSandLayer();

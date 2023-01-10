@@ -1,8 +1,7 @@
 const CactusBot = require("./CactusBot");
-const SecondaryCactusBot = require("./SecondaryCactusBot");
+const config = require("../config.json");
 const CactusCalculations = require("./CactusCalculations");
 let mcData; // loaded after bot spawns in minecraft server
-const config = require("../config.json");
 
 const BOTS_COUNT = parseInt(config.settings.numberOfBots);
 const NUM_OF_TICKS_BOT_SPAWN = 20; 
@@ -67,7 +66,7 @@ class PrimaryCactusBot extends CactusBot {
 
     async spawnSecondaryBots() {
         for (let i = 2;  i <= BOTS_COUNT; ++i) {
-            let newBot = new SecondaryCactusBot(i);
+            let newBot = new CactusBot(i);
             Object.assign(newBot.blockIds, this.blockIds);
             newBot.toolId = this.toolId;
             this.secondaryBots.push(newBot);
