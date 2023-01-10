@@ -200,10 +200,12 @@ class PrimaryCactusBot extends CactusBot {
         let botItems = this.bot.inventory.items();
         if (!this.hasEnoughMaterialsToBuild(startElevation, endElevation, botItems)) return;
         let numOfLayersToBuild = this.computeNumOfLayersToBuild(startElevation, endElevation);
-        await this.build(numOfLayersToBuild);
+        await this.build(numOfLayersToBuild, startElevation);
     }
 
-    async build(numOfLayersToBuild) {
+    async build(numOfLayersToBuild, startElevation) {
+        console.log(`${this.bot.username} building ${numOfLayersToBuild} layers`,
+            `starting at ${startElevation}`);
         await this.buildFoundationLayer();
         for (var i = 0; i < numOfLayersToBuild; ++i) {
             await this.buildFoundationLayer();
@@ -212,7 +214,7 @@ class PrimaryCactusBot extends CactusBot {
             await this.buildCactusLayer();
             await this.buildCactusBreakLayer();
         }
-        await this.digDown();
+        await this.digDown(startElevation);
     }
 
     async buildUp() {
@@ -222,17 +224,18 @@ class PrimaryCactusBot extends CactusBot {
         let goalElevation = Math.floor(this.bot.entity.position.y) + 1;
         await this.bot.lookAt(sourceBlockPosition);
         let tryCount = 0
+
         while (tryCount < 10) {
             try {
                 this.bot.setControlState("jump", true);
                 this.bot.setControlState("jump", false);
                 while (true) {
-                    if (this.bot.entity.position.y > goalElevation) {
+                    if (this.bot.entity.position.y >= goalElevation) {
+                        await this.bot.placeBlock(sourceBlock, TOP_FACE);
                         break;
                     }
                     await this.bot.waitForTicks(1);
                 }
-                await this.bot.placeBlock(sourceBlock, TOP_FACE);
                 break;
             } catch(e) {
                 await this.bot.waitForTicks(NUM_OF_TICKS_JUMP);
@@ -284,10 +287,10 @@ class PrimaryCactusBot extends CactusBot {
         await this.buildUp();
     }
 
-    async digDown() {
+    async digDown(startElevation) {
         if (this.toolId >= 0) this.bot.equip(this.toolId, "hand");
         await this.bot.lookAt(this.bot.entity.position.offset(0, -1, 0));
-        while (Math.floor(this.bot.entity.position.y) > this.startElevation) {
+        while (Math.floor(this.bot.entity.position.y) > startElevation) {
             await this.bot.dig(this.bot.blockAt(this.bot.entity.position.offset(0, -1, 0)), true);
         }
     }
