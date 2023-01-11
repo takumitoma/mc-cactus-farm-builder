@@ -4,10 +4,10 @@ const CactusCalculations = require("./CactusCalculations");
 let mcData; // loaded after bot spawns in minecraft server
 
 const BOTS_COUNT = parseInt(config.settings.numberOfBots);
-const NUM_OF_TICKS_BOT_SPAWN = 20; 
 const TOOL_NAME = config.settings.tool;
 const FOUNDATION_BLOCK_NAME = config.settings.foundationBlock;
 const CACTUS_BREAK_BLOCK_NAME = config.settings.cactusBreakBlock;
+const NUM_OF_TICKS_BOT_SPAWN = 20; 
 const offsets = [
     [4, 0],
     [4, 4],
@@ -80,6 +80,7 @@ class PrimaryCactusBot extends CactusBot {
             console.log("goto command failed, invalid argument length");
             return false;
         }
+
         if (!isNaN(tokens[1]) && !isNaN(tokens[2]) && !isNaN(tokens[3])) {
             return true;
         }
@@ -94,6 +95,7 @@ class PrimaryCactusBot extends CactusBot {
             console.log("build command failed, invalid argument length");
             return false;
         }
+
         if (isNaN(tokens[1])) {
             console.log("build command failed, invalid arguments for coordinates");
             return false;
@@ -123,6 +125,7 @@ class PrimaryCactusBot extends CactusBot {
         let x = parseFloat(tokens[1]);
         let y = parseFloat(tokens[2]);
         let z = parseFloat(tokens[3]);
+
         let self = this;
         let operations = [new Promise(async function() { await self.gotoGoalBlock(x, y, z) })];
         let i = 0;
@@ -134,23 +137,28 @@ class PrimaryCactusBot extends CactusBot {
             }));
             ++i;
         }
+
         Promise.all(operations);
     }
 
     async onBuild(tokens) {
         if (!this.buildIsValid(tokens)) return;
+
         let startElevation = this.bot.entity.position.y;
         let endElevation = tokens[1];
+
         let numOfLayersToBuild = 
             CactusCalculations.computeNumOfLayersToBuild(startElevation, endElevation);
         let numOfBlocksNeeded = this.getNumOfBlocksNeeded(numOfLayersToBuild);
         if (!this.allBotsHaveEnoughMaterials(numOfBlocksNeeded)) return;
+
         await this.allBotsBuild(numOfLayersToBuild, startElevation);
     }
 
     allBotsHaveEnoughMaterials(numOfBlocksNeeded) {
         let conditionSatisfied = true;
         let botItems = this.bot.inventory.items();
+
         if (!this.hasEnoughMaterials(numOfBlocksNeeded, botItems)) conditionSatisfied = false;
         for (let cactusBot of this.secondaryBots) {
             let cactusBotItems = cactusBot.bot.inventory.items();
@@ -158,6 +166,7 @@ class PrimaryCactusBot extends CactusBot {
                 conditionSatisfied = false;
             }
         }
+        
         return conditionSatisfied;
     }
 
@@ -166,6 +175,7 @@ class PrimaryCactusBot extends CactusBot {
         let operations = [new Promise(async function() { 
             await self.build(numOfLayersToBuild, startElevation) 
         })];
+
         let i = 0;
         for (let cactusBot of this.secondaryBots) {
             operations.push(new Promise(async function() { 
@@ -173,6 +183,7 @@ class PrimaryCactusBot extends CactusBot {
             }));
             ++i;
         }
+
         Promise.all(operations);
     }
 

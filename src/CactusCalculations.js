@@ -17,6 +17,7 @@ const CactusCalculations = {
             foundation: 0,
             cactusBreak: 0
         };
+
         for (let block in NUM_OF_BLOCKS_PER_LAYER) {
             let blocksNeeded = numOfLayersToBuild * NUM_OF_BLOCKS_PER_LAYER[block];
             if (block == "foundation") {
@@ -24,6 +25,7 @@ const CactusCalculations = {
             }
             numOfBlocks[block] = blocksNeeded;
         }
+
         return numOfBlocks;
     },
 
@@ -34,6 +36,7 @@ const CactusCalculations = {
             foundation: 0,
             cactusBreak: 0
         };
+
         for (let item of botItems) {
             switch (item.name) {
                 case "cactus":
@@ -50,6 +53,7 @@ const CactusCalculations = {
                     break;
             }
         }
+
         return numOfBlocks;
     },
 
@@ -62,6 +66,7 @@ const CactusCalculations = {
             cactusBreak: 0
         };
         let hasEnoughMaterials = true;
+
         for (let block in numOfBlocksNeeded) {
             if (numOfBlocksInInventory[block] < numOfBlocksNeeded[block]) {
                 numOfBlocksMissing[block] = 
@@ -69,6 +74,7 @@ const CactusCalculations = {
                 hasEnoughMaterials = false;
             }
         }
+
         return (hasEnoughMaterials) ? null : numOfBlocksMissing;
     }
 }
