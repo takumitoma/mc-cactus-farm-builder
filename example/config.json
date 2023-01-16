@@ -1,0 +1,11 @@
+{
+    "settings": {
+        "portNumber": "25565",
+        "username": "Cactus_Farm_Bot",
+        "version": "1.19",
+        "numberOfBots": "4",
+        "foundationBlock": "dirt",
+        "cactusBreakBlock": "oak_fence",
+        "tool": "diamond_shovel"
+    }
+}
