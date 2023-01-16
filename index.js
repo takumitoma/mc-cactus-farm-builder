@@ -1,3 +1,3 @@
 const PrimaryCactusBot = require("./src/PrimaryCactusBot");
 
-let bot = new PrimaryCactusBot();
+const bot = new PrimaryCactusBot();

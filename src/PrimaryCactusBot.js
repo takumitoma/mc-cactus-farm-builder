@@ -30,7 +30,7 @@ class PrimaryCactusBot extends CactusBot {
         this.bot.on("chat", async (username, message) => {
             if ((username == this.bot.username) || !message.startsWith("cactus")) return;
 
-            let tokens = message.split(" ").slice(1);
+            const tokens = message.split(" ").slice(1);
 
             switch(tokens[0]) {
                 case "build":
@@ -51,7 +51,7 @@ class PrimaryCactusBot extends CactusBot {
     }
 
     loadToolId() {
-        let toolName = TOOL_NAME;
+        const toolName = TOOL_NAME;
         if (toolName != "") this.toolId = mcData.itemsByName[toolName].id;
     }
 
@@ -66,7 +66,7 @@ class PrimaryCactusBot extends CactusBot {
 
     async spawnSecondaryBots() {
         for (let i = 2;  i <= BOTS_COUNT; ++i) {
-            let newBot = new CactusBot(i);
+            const newBot = new CactusBot(i);
             Object.assign(newBot.blockIds, this.blockIds);
             newBot.toolId = this.toolId;
             this.secondaryBots.push(newBot);
@@ -115,23 +115,23 @@ class PrimaryCactusBot extends CactusBot {
     }
 
     getNumOfBlocksNeeded(numOfLayersToBuild) {
-        let numOfBlocksNeeded = CactusCalculations.computeNumOfBlocksNeeded(numOfLayersToBuild);
+        const numOfBlocksNeeded = CactusCalculations.computeNumOfBlocksNeeded(numOfLayersToBuild);
         console.log("numOfBlocksNeeded: ", numOfBlocksNeeded);
         return numOfBlocksNeeded;
     }
 
     async onGoto(tokens) {
         if (!this.gotoIsValid(tokens)) return;
-        let x = parseFloat(tokens[1]);
-        let y = parseFloat(tokens[2]);
-        let z = parseFloat(tokens[3]);
+        const x = parseFloat(tokens[1]);
+        const y = parseFloat(tokens[2]);
+        const z = parseFloat(tokens[3]);
 
-        let self = this;
-        let operations = [new Promise(async function() { await self.gotoGoalBlock(x, y, z) })];
+        const self = this;
+        const operations = [new Promise(async function() { await self.gotoGoalBlock(x, y, z) })];
         let i = 0;
         for (let cactusBot of this.secondaryBots) {
-            let newX = x + offsets[i][0];
-            let newZ = z + offsets[i][1];
+            const newX = x + offsets[i][0];
+            const newZ = z + offsets[i][1];
             operations.push(new Promise(async function() { 
                 await cactusBot.gotoGoalBlock(newX, y, newZ);
             }));
@@ -144,12 +144,12 @@ class PrimaryCactusBot extends CactusBot {
     async onBuild(tokens) {
         if (!this.buildIsValid(tokens)) return;
 
-        let startElevation = this.bot.entity.position.y;
-        let endElevation = tokens[1];
+        const startElevation = this.bot.entity.position.y;
+        const endElevation = tokens[1];
 
-        let numOfLayersToBuild = 
+        const numOfLayersToBuild = 
             CactusCalculations.computeNumOfLayersToBuild(startElevation, endElevation);
-        let numOfBlocksNeeded = this.getNumOfBlocksNeeded(numOfLayersToBuild);
+        const numOfBlocksNeeded = this.getNumOfBlocksNeeded(numOfLayersToBuild);
         if (!this.allBotsHaveEnoughMaterials(numOfBlocksNeeded)) return;
 
         await this.allBotsBuild(numOfLayersToBuild, startElevation);
@@ -157,11 +157,11 @@ class PrimaryCactusBot extends CactusBot {
 
     allBotsHaveEnoughMaterials(numOfBlocksNeeded) {
         let conditionSatisfied = true;
-        let botItems = this.bot.inventory.items();
+        const botItems = this.bot.inventory.items();
 
         if (!this.hasEnoughMaterials(numOfBlocksNeeded, botItems)) conditionSatisfied = false;
         for (let cactusBot of this.secondaryBots) {
-            let cactusBotItems = cactusBot.bot.inventory.items();
+            const cactusBotItems = cactusBot.bot.inventory.items();
             if (!cactusBot.hasEnoughMaterials(numOfBlocksNeeded, cactusBotItems)) {
                 conditionSatisfied = false;
             }
@@ -171,8 +171,8 @@ class PrimaryCactusBot extends CactusBot {
     }
 
     async allBotsBuild(numOfLayersToBuild, startElevation) {
-        let self = this;
-        let operations = [new Promise(async function() { 
+        const self = this;
+        const operations = [new Promise(async function() { 
             await self.build(numOfLayersToBuild, startElevation) 
         })];
 

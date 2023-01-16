@@ -11,7 +11,7 @@ const CactusCalculations = {
     },
 
     computeNumOfBlocksNeeded: function (numOfLayersToBuild) {
-        let numOfBlocks = {
+        const numOfBlocks = {
             cactus: 0,
             sand: 0,
             foundation: 0,
@@ -30,7 +30,7 @@ const CactusCalculations = {
     },
 
     computeNumOfBlocksInInventory: function (botItems, foundationName, cactusBreakName) {
-        let numOfBlocks = {
+        const numOfBlocks = {
             cactus: 0,
             sand: 0,
             foundation: 0,
@@ -59,7 +59,7 @@ const CactusCalculations = {
 
     // return null if there aren't any missing blocks
     computeNumOfBlocksMissing: function (numOfBlocksNeeded, numOfBlocksInInventory) {
-        let numOfBlocksMissing = {
+        const numOfBlocksMissing = {
             cactus: 0,
             sand: 0,
             foundation: 0,

@@ -12,7 +12,7 @@ const TOP_FACE = vec3(0, 1, 0);
 
 class CactusBot {
     constructor(botId) {
-        let username = config.settings.username + botId.toString();
+        const username = config.settings.username + botId.toString();
 
         this.bot = mineflayer.createBot({
             host: "localhost",
@@ -56,13 +56,13 @@ class CactusBot {
 
     loadPathFinder(mcData) {
         this.bot.loadPlugin(pathfinder);
-        let movements = new Movements(this.bot, mcData);
+        const movements = new Movements(this.bot, mcData);
         this.bot.pathfinder.setMovements(movements);
         movements.canDig = false;
     }   
 
     async gotoGoalBlock(x, y, z) {
-        let goal = new GoalBlock(x, y, z);
+        const goal = new GoalBlock(x, y, z);
         await this.bot.pathfinder.goto(goal, true);
     }
 
@@ -85,16 +85,16 @@ class CactusBot {
     }
 
     // this function is largely copied from 
-    // https://github.com/Katzengott/mineflayer-cactus-bot/blob/main/cactus.js
+    // https://github.com/PrismarineJS/mineflayer/blob/master/examples/digger.js
     async buildUp() {
         await this.bot.equip(this.blockIds.foundation, "hand");
-        let referenceBlock = this.bot.blockAt(this.bot.entity.position.offset(0, -1, 0));
-        let goalElevation = Math.floor(this.bot.entity.position.y) + 1.0;
+        const referenceBlock = this.bot.blockAt(this.bot.entity.position.offset(0, -1, 0));
+        const goalElevation = Math.floor(this.bot.entity.position.y) + 1.0;
         this.bot.setControlState("jump", true);
         this.bot.on("move", placeIfHighEnough);
 
         let tryCount = 0;
-        let self = this;
+        const self = this;
         async function placeIfHighEnough () {
             if (self.bot.entity.position.y > goalElevation) {
                 try {
@@ -116,7 +116,7 @@ class CactusBot {
     }
 
     async buildCorners(blockID) {
-        let botPosition = this.bot.entity.position;
+        const botPosition = this.bot.entity.position;
         await this.bot.equip(blockID, "hand");
         await this.bot.placeBlock(this.bot.blockAt(botPosition.offset(1, -1, -1)), TOP_FACE);
         await this.bot.equip(blockID, "hand");
@@ -143,7 +143,7 @@ class CactusBot {
     }
 
     async digFoundationLayer() {
-        let botPosition = this.bot.entity.position;
+        const botPosition = this.bot.entity.position;
         if (this.toolId >= 0) this.bot.equip(this.toolId, "hand");
         await this.bot.dig(this.bot.blockAt(botPosition.offset(1, -2, -1)), false);
         await this.bot.dig(this.bot.blockAt(botPosition.offset(1, -2, 1)), false);
@@ -153,7 +153,7 @@ class CactusBot {
 
     async buildCactusBreakLayer() {
         await this.buildCorners(this.blockIds.foundation);
-        let botPosition = this.bot.entity.position;
+        const botPosition = this.bot.entity.position;
         await this.bot.equip(this.blockIds.cactusBreak, "hand");
         await this.bot.placeBlock(this.bot.blockAt(botPosition.offset(1, 0, -1)), vec3(0, 0, 1));
         await this.bot.equip(this.blockIds.cactusBreak, "hand");
@@ -171,7 +171,7 @@ class CactusBot {
 
     async digCorners(blockID) {
         if (this.toolId >= 0) this.bot.equip(this.toolId, "hand");
-        let botPosition = this.bot.entity.position;
+        const botPosition = this.bot.entity.position;
         await this.bot.dig(this.bot.blockAt(botPosition.offset(1, -1, -1)), false);
         await this.bot.dig(this.bot.blockAt(botPosition.offset(1, -1, 1)), false);
         await this.bot.dig(this.bot.blockAt(botPosition.offset(-1, -1, 1)), false);
@@ -179,11 +179,11 @@ class CactusBot {
     }
 
     hasEnoughMaterials(numOfBlocksNeeded, botItems) {
-        let numOfBlocksInInventory = CactusCalculations.computeNumOfBlocksInInventory
+        const numOfBlocksInInventory = CactusCalculations.computeNumOfBlocksInInventory
             (botItems, FOUNDATION_BLOCK_NAME, CACTUS_BREAK_BLOCK_NAME);
         console.log(`${this.bot.username} numOfBlocksInInventory`, numOfBlocksInInventory);
 
-        let numOfBlocksMissing = 
+        const numOfBlocksMissing = 
             CactusCalculations.computeNumOfBlocksMissing(numOfBlocksNeeded, numOfBlocksInInventory);
         if (!numOfBlocksMissing) return true;
 

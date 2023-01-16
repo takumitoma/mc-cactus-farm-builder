@@ -1,11 +1,11 @@
 {
     "settings": {
-        "portNumber": "54038",
-        "username": "Cactus_Farm_Bot",
-        "version": "1.19",
-        "numberOfBots": "4",
-        "foundationBlock": "dirt",
-        "cactusBreakBlock": "oak_fence",
-        "tool": "diamond_shovel"
+        "portNumber": "Port number of the server",
+        "username": "Username prefix of the bots that build the cactus farm",
+        "version": "The version of Minecraft that the bot plays on",
+        "numberOfBots": "Number of bots that build the cactus farm. Supported numbers are 1-9",
+        "foundationBlock": "Block used for the foundation of the sand",
+        "cactusBreakBlock": "Block used to break the cactus",
+        "tool": "Tool the bots uses to break the foundation blocks, leave as empty if no tool are to be used"
     }
 }
