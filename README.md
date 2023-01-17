@@ -8,6 +8,7 @@
 > Minecraft bots that build cactus farms in Minecraft Survival Mode. Created using Javascript (Node) and the Mineflayer library.
 
 ![2023-01-16_21 45 47](https://user-images.githubusercontent.com/85015271/212819798-d5fe69ed-b0fe-4390-a1db-479afbfdd041.png)
+<sub>Note: The bots will dig down the pillars below them after they build up to the top</sub>
 
 ## Install
 
